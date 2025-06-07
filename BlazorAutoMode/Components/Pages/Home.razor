@@ -2,6 +2,32 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-body text-center">
+                    <h1 class="display-4 mb-4">Welcome to Our Application</h1>
+                    <p class="lead">This is a beautiful and responsive Blazor application with authentication.</p>
+                    
+                    <hr class="my-4">
+                    
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="alert alert-success" role="alert">
+                                Hello, @context.User.Identity?.Name! You are logged in.
+                                <span><a class="fw-bolder" href="/logout">Click here</a> to log out.</span>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <div class="alert alert-info" role="alert">
+                                You are not logged in.
+                                <span><a class="fw-bolder" href="/login">Click here</a> to log in.</span>
+                            </div>
+                        </NotAuthorized>
+                    </AuthorizeView>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
