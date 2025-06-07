@@ -1,5 +1,7 @@
 ﻿@page "/counter"
-@rendermode InteractiveAuto
+@rendermode InteractiveWebAssembly
+@inject IJSRuntime js
+@attribute [Authorize(Roles = "Administrator, User")]
 
 <PageTitle>Counter</PageTitle>
 
@@ -9,11 +11,32 @@
 
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
+<AuthorizeView Roles="Administrator">
+    <Authorized>
+        <br><br>
+        <button class="btn btn-outline-primary" @onclick="DisplayGreetingAlert">Display Greeting Alert</button>
+    </Authorized>
+</AuthorizeView>
+
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; } = default!;
     private int currentCount = 0;
 
     private void IncrementCount()
     {
         currentCount++;
+    }
+
+    private async Task DisplayGreetingAlert()
+    {
+        // Display a greeting alert
+        var authState = await authenticationStateTask;
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            await js.InvokeVoidAsync("alert", $"Hello, {user.Identity.Name}!");
+        }
     }
 }
