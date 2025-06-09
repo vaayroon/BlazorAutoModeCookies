@@ -13,8 +13,12 @@
 </head>
 
 <body>
-    <Routes />
+    @using BlazorAutoMode.Components.Shared
+    <CustomErrorBoundary>
+        <Routes />
+    </CustomErrorBoundary>
     <script src="_framework/blazor.web.js"></script>
 </body>
 
 </html>
+

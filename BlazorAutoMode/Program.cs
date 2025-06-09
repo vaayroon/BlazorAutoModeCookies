@@ -2,6 +2,8 @@ using BlazorAutoMode;
 using BlazorAutoMode.Components;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Diagnostics;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,9 +42,47 @@ if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
 }
-else
+
+// Global exception handler - catches all unhandled exceptions
+app.UseExceptionHandler(errorApp =>
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    errorApp.Run(async context =>
+    {
+        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var exception = exceptionHandlerPathFeature?.Error;
+
+        if (exception != null)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(exception, "Unhandled exception occurred at {Path}", context.Request.Path);
+
+            // For API requests, return JSON error
+            if (context.Request.Path.StartsWithSegments("/api") || 
+                context.Request.Headers["Accept"].ToString().Contains("application/json"))
+            {
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                context.Response.ContentType = "application/json";
+                
+                var error = new 
+                {
+                    Message = "An unexpected error occurred.",
+                    DetailedMessage = app.Environment.IsDevelopment() ? exception.Message : null,
+                    StackTrace = app.Environment.IsDevelopment() ? exception.StackTrace : null
+                };
+                
+                await context.Response.WriteAsJsonAsync(error);
+            }
+            else
+            {
+                // For browser requests, redirect to error page
+                context.Response.Redirect("/Error");
+            }
+        }
+    });
+});
+
+if (!app.Environment.IsDevelopment())
+{
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
@@ -58,6 +98,6 @@ app.UseAuthorization();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(BlazorAutoMode.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(BlazorAutoMode.Client.Models.Entities.UserInfo).Assembly);
 
 app.Run();

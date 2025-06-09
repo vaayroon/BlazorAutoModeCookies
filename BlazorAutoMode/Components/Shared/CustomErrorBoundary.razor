@@ -1,0 +1,54 @@
+@inherits ErrorBoundary
+@using Microsoft.AspNetCore.Components.Web
+@using System.Diagnostics
+
+<CascadingValue Value="this">
+    @ChildContent
+</CascadingValue>
+
+@if (CurrentException is not null)
+{
+    <div class="container mt-5">
+        <div class="alert alert-danger" role="alert">
+            <h3>An error has occurred</h3>
+            <p>The application has encountered an error, but will continue to run.</p>
+            @if (ShowDetails)
+            {
+                <div>
+                    <p><strong>Error: </strong>@CurrentException.Message</p>
+                    <p><strong>Stack Trace:</strong></p>
+                    <pre>@CurrentException.StackTrace</pre>
+                </div>
+            }
+            <button class="btn btn-primary mt-3" @onclick="Recover">Retry</button>
+            <button class="btn btn-secondary mt-3 ms-2" @onclick="ToggleDetails">
+                @(ShowDetails ? "Hide Details" : "Show Details")
+            </button>
+            <button class="btn btn-info mt-3 ms-2" @onclick="NavigateToHome">Go to Home</button>
+        </div>
+    </div>
+}
+
+@code {
+    [Inject] private ILogger<CustomErrorBoundary> Logger { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    
+    private bool ShowDetails { get; set; } = false;
+    
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        Logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
+        return base.OnErrorAsync(exception);
+    }
+    
+    private void ToggleDetails()
+    {
+        ShowDetails = !ShowDetails;
+    }
+    
+    private void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+        Recover();
+    }
+}

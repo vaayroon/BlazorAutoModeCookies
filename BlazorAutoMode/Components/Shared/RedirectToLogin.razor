@@ -1,0 +1,13 @@
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components
+
+@code {
+    protected override void OnInitialized()
+    {
+        var returnUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        if (string.IsNullOrEmpty(returnUrl))
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+        else
+            NavigationManager.NavigateTo($"/Account/Login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: true);
+    }
+}
