@@ -1,0 +1,18 @@
+// coreclr launch prelaunch Build BlazorAutoModeCookies settingsprofile https
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug BlazorAutoModeCookies",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Build BlazorAutoModeCookies",
+      "program": "${workspaceFolder}/BlazorAutoMode/bin/Debug/net8.0/BlazorAutoMode.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/BlazorAutoMode",
+      "stopAtEntry": false,
+      "env": {},
+      "launchSettingsProfile": "https"
+    }
+  ]
+}
