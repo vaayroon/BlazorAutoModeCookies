@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@namespace BlazorAutoMode.Components
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -17,6 +19,9 @@
     <CustomErrorBoundary>
         <Routes />
     </CustomErrorBoundary>
+    
+    <!-- Initialize JavaScript error handling after rendering -->
+    <JsErrorInitializer />
     
     <script src="_framework/blazor.web.js"></script>
     <script src="js/errorHandling.js"></script>

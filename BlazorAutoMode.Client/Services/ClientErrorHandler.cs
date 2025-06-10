@@ -38,7 +38,7 @@ public class ClientErrorHandler : IClientErrorHandler, IAsyncDisposable
             
             // Use the import approach instead of direct reference to support lazy loading
             _jsModule = await _jsRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/BlazorAutoMode.Client/js/clientErrorHandling.js");
+                "import", "./js/clientErrorHandling.js");
                 
             await _jsModule.InvokeVoidAsync("clientErrorHandling.initialize", _dotNetRef);
             

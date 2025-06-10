@@ -30,14 +30,29 @@ public class JsErrorHandler : IJsErrorHandler, IAsyncDisposable
     {
         try
         {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            _jsModule = await _jsRuntime.InvokeAsync<IJSObjectReference>(
-                "import", "./js/errorHandling.js");
+            // Check if we're in a context where JS interop is available
+            if (!_jsRuntime.IsInitialized())
+            {
+                // Skip initialization during prerendering
+                return;
+            }
             
-            // Initialize the JavaScript error handler with a reference to this .NET object
-            await _jsRuntime.InvokeVoidAsync("errorHandling.initialize", _dotNetRef);
+            // Only create these if they haven't been created yet
+            if (_dotNetRef == null)
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+            }
             
-            _logger.LogInformation("JavaScript error handler initialized");
+            if (_jsModule == null)
+            {
+                _jsModule = await _jsRuntime.InvokeAsync<IJSObjectReference>(
+                    "import", "./js/errorHandling.js");
+                
+                // Initialize the JavaScript error handler with a reference to this .NET object
+                await _jsRuntime.InvokeVoidAsync("errorHandling.initialize", _dotNetRef);
+                
+                _logger.LogInformation("JavaScript error handler initialized");
+            }
         }
         catch (Exception ex)
         {

@@ -1,0 +1,22 @@
+@using Microsoft.JSInterop
+@using BlazorAutoMode.Services
+@implements IDisposable
+@inject IJsErrorHandler JsErrorHandler
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize JS error handler after the component has rendered to the client
+            // This ensures JS interop is available
+            await JsErrorHandler.InitializeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup is handled by the JsErrorHandler's IAsyncDisposable implementation
+        // when the service scope is disposed
+    }
+}

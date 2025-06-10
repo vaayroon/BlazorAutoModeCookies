@@ -25,6 +25,7 @@
 
     private void IncrementCount()
     {
+        throw new InvalidOperationException("Simulated error for testing purposes.");
         currentCount++;
     }
 
