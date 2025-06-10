@@ -1,6 +1,8 @@
 @inherits ErrorBoundary
 @using Microsoft.AspNetCore.Components.Web
 @using System.Diagnostics
+@using BlazorAutoMode.Services
+@using BlazorAutoMode.Components.Shared
 
 <CascadingValue Value="this">
     @ChildContent
@@ -8,47 +10,74 @@
 
 @if (CurrentException is not null)
 {
-    <div class="container mt-5">
-        <div class="alert alert-danger" role="alert">
-            <h3>An error has occurred</h3>
-            <p>The application has encountered an error, but will continue to run.</p>
-            @if (ShowDetails)
-            {
-                <div>
-                    <p><strong>Error: </strong>@CurrentException.Message</p>
-                    <p><strong>Stack Trace:</strong></p>
-                    <pre>@CurrentException.StackTrace</pre>
-                </div>
-            }
-            <button class="btn btn-primary mt-3" @onclick="Recover">Retry</button>
-            <button class="btn btn-secondary mt-3 ms-2" @onclick="ToggleDetails">
-                @(ShowDetails ? "Hide Details" : "Show Details")
-            </button>
-            <button class="btn btn-info mt-3 ms-2" @onclick="NavigateToHome">Go to Home</button>
-        </div>
-    </div>
+    <GlobalErrorDisplay 
+        ErrorMessage="@GetUserFriendlyErrorMessage()"
+        DetailedError="@GetDetailedErrorInfo()"
+        OnReload="@Recover" />
 }
 
 @code {
     [Inject] private ILogger<CustomErrorBoundary> Logger { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
-    
-    private bool ShowDetails { get; set; } = false;
+    [Inject] private IErrorLoggingService ErrorLoggingService { get; set; } = default!;
+    [Inject] private IWebHostEnvironment HostEnvironment { get; set; } = default!;
     
     protected override Task OnErrorAsync(Exception exception)
     {
-        Logger.LogError(exception, "Unhandled exception occurred: {Message}", exception.Message);
+        // Log the error to our centralized error logging service
+        ErrorLoggingService.LogError(
+            exception,
+            "Blazor UI Rendering",
+            $"URL: {NavigationManager.Uri}"
+        );
+        
         return base.OnErrorAsync(exception);
     }
     
-    private void ToggleDetails()
+    private string GetUserFriendlyErrorMessage()
     {
-        ShowDetails = !ShowDetails;
+        if (CurrentException is null)
+            return "An unknown error occurred.";
+            
+        // Provide more user-friendly messages for known exception types
+        return CurrentException switch
+        {
+            InvalidOperationException => "The application encountered an unexpected state. This could be due to timing or data inconsistency.",
+            NullReferenceException => "The application tried to use data that wasn't available.",
+            HttpRequestException => "There was a problem connecting to the server. Please check your internet connection.",
+            TimeoutException => "The operation timed out. Please try again later.",
+            _ => "Sorry, something went wrong while rendering this page."
+        };
     }
     
-    private void NavigateToHome()
+    private string GetDetailedErrorInfo()
     {
-        NavigationManager.NavigateTo("/");
-        Recover();
+        if (CurrentException is null)
+            return string.Empty;
+            
+        var errorInfo = new System.Text.StringBuilder();
+        errorInfo.AppendLine($"Error Type: {CurrentException.GetType().FullName}");
+        errorInfo.AppendLine($"Message: {CurrentException.Message}");
+        
+        if (CurrentException.StackTrace is not null)
+        {
+            errorInfo.AppendLine("\nStack Trace:");
+            errorInfo.AppendLine(CurrentException.StackTrace);
+        }
+        
+        if (CurrentException.InnerException is not null)
+        {
+            errorInfo.AppendLine("\nInner Exception:");
+            errorInfo.AppendLine($"Type: {CurrentException.InnerException.GetType().FullName}");
+            errorInfo.AppendLine($"Message: {CurrentException.InnerException.Message}");
+            
+            if (CurrentException.InnerException.StackTrace is not null)
+            {
+                errorInfo.AppendLine("Stack Trace:");
+                errorInfo.AppendLine(CurrentException.InnerException.StackTrace);
+            }
+        }
+        
+        return errorInfo.ToString();
     }
 }

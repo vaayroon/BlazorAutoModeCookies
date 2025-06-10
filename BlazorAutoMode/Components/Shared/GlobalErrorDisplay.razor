@@ -1,0 +1,224 @@
+@namespace BlazorAutoMode.Components.Shared
+
+<div class="global-error-container">
+    <div class="global-error-card">
+        <div class="global-error-header">
+            <h2>
+                <svg class="error-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="none" d="M0 0h24v24H0z"/>
+                    <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" fill="currentColor"/>
+                </svg>
+                An error has occurred
+            </h2>
+        </div>
+        <div class="global-error-body">
+            <p class="error-message">@ErrorMessage</p>
+            
+            @if (ShowDetails && !string.IsNullOrEmpty(DetailedError))
+            {
+                <div class="error-details">
+                    <h3>Technical Details</h3>
+                    <div class="error-stack">
+                        <pre>@DetailedError</pre>
+                    </div>
+                </div>
+            }
+            
+            <div class="error-actions">
+                <button class="reload-button" @onclick="ReloadPage">
+                    <span class="reload-icon">↻</span> Reload Page
+                </button>
+                
+                @if (!string.IsNullOrEmpty(DetailedError))
+                {
+                    <button class="toggle-details-button" @onclick="ToggleDetails">
+                        @(ShowDetails ? "Hide Details" : "Show Details")
+                    </button>
+                }
+                
+                <button class="home-button" @onclick="GoToHome">
+                    Go to Home
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .global-error-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .global-error-card {
+        max-width: 700px;
+        width: 100%;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .global-error-header {
+        background-color: #dc3545;
+        color: white;
+        padding: 16px 24px;
+    }
+    
+    .global-error-header h2 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1.4rem;
+    }
+    
+    .error-icon {
+        margin-right: 12px;
+        width: 24px;
+        height: 24px;
+    }
+    
+    .global-error-body {
+        padding: 24px;
+    }
+    
+    .error-message {
+        font-size: 1.1rem;
+        margin-bottom: 24px;
+    }
+    
+    .error-details {
+        margin-top: 24px;
+        margin-bottom: 24px;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        padding: 16px;
+    }
+    
+    .error-details h3 {
+        margin-top: 0;
+        font-size: 1.1rem;
+        color: #6c757d;
+    }
+    
+    .error-stack {
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: #212529;
+        color: #f8f9fa;
+        border-radius: 4px;
+        padding: 12px;
+    }
+    
+    .error-stack pre {
+        margin: 0;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+    
+    .error-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+    }
+    
+    .reload-button {
+        display: flex;
+        align-items: center;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .reload-button:hover {
+        background-color: #0b5ed7;
+    }
+    
+    .reload-icon {
+        margin-right: 8px;
+        font-size: 1.2rem;
+    }
+    
+    .toggle-details-button {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .toggle-details-button:hover {
+        background-color: #5a6268;
+    }
+    
+    .home-button {
+        background-color: #198754;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .home-button:hover {
+        background-color: #157347;
+    }
+</style>
+
+@code {
+    [Parameter] public string ErrorMessage { get; set; } = "Sorry, something went wrong while processing your request.";
+    [Parameter] public string? DetailedError { get; set; }
+    [Parameter] public EventCallback OnReload { get; set; }
+    
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+    [Inject] private IWebHostEnvironment HostEnvironment { get; set; } = default!;
+    
+    private bool ShowDetails { get; set; } = false;
+    
+    protected override void OnInitialized()
+    {
+        // In development, show details by default
+        ShowDetails = HostEnvironment.IsDevelopment();
+    }
+    
+    private async Task ReloadPage()
+    {
+        // First try to invoke the OnReload callback if provided
+        if (OnReload.HasDelegate)
+        {
+            await OnReload.InvokeAsync();
+        }
+        else
+        {
+            // Otherwise, reload the page
+            await JSRuntime.InvokeVoidAsync("location.reload");
+        }
+    }
+    
+    private void ToggleDetails()
+    {
+        ShowDetails = !ShowDetails;
+    }
+    
+    private void GoToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}

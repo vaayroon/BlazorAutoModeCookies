@@ -1,5 +1,6 @@
 using BlazorAutoMode;
 using BlazorAutoMode.Components;
+using BlazorAutoMode.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
@@ -35,7 +36,16 @@ builder.Services
 
 builder.Services.AddScoped<AuthenticationStateProvider, PersistingAuthenticationStateProvider>();
 
+// Register error handling services
+builder.Services.AddScoped<IErrorLoggingService, ErrorLoggingService>();
+builder.Services.AddScoped<IJsErrorHandler, JsErrorHandler>();
+builder.Services.AddSingleton<IUnhandledExceptionLogger, UnhandledExceptionLogger>();
+
 var app = builder.Build();
+
+// Initialize the unhandled exception logger
+var exceptionLogger = app.Services.GetRequiredService<IUnhandledExceptionLogger>();
+exceptionLogger.Initialize();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -99,5 +109,27 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(BlazorAutoMode.Client.Models.Entities.UserInfo).Assembly);
+
+// Create a middleware to initialize the JS error handler for each request
+app.Use(async (context, next) =>
+{
+    // Get a scoped instance of the JsErrorHandler
+    var jsErrorHandler = context.RequestServices.GetRequiredService<IJsErrorHandler>();
+    
+    try
+    {
+        // Initialize the JS error handler
+        await jsErrorHandler.InitializeAsync();
+    }
+    catch (Exception ex)
+    {
+        // Don't let initialization errors stop the request
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Failed to initialize JS error handler");
+    }
+    
+    // Continue with the request
+    await next();
+});
 
 app.Run();
